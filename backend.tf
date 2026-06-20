@@ -27,7 +27,7 @@
 #
 # NOTE: Switching environments requires:
 #   terraform init -backend-config=environments/<env>/backend.hcl -reconfigure
-# ---------------------------------------------------------------------------
+# ------------------------------------------------------------------------
 terraform {
   backend "azurerm" {
     resource_group_name  = "aswin-rg"
