@@ -67,6 +67,12 @@ resource "azurerm_postgresql_flexible_server" "this" {
 
   tags = var.tags
 
+  # Azure auto-assigns an availability zone on creation; ignore it so Terraform
+  # doesn't try to change it on subsequent applies (requires HA to swap zones).
+  lifecycle {
+    ignore_changes = [zone]
+  }
+
   # Flexible server requires the private DNS zone VNet link to exist first
   # so it can register its FQDN during provisioning.
   depends_on = [
