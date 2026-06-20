@@ -11,6 +11,13 @@
 
 name: Terraform Infrastructure Pipeline
 
+# Grant permissions to the reusable workflow's jobs.
+# GitHub requires the CALLER to declare permissions that reusable jobs request.
+permissions:
+  contents: read
+  id-token: write       # OIDC token for Azure login
+  pull-requests: write  # post plan output to PR summary
+
 on:
   push:
     branches:
