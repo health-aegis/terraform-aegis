@@ -1,4 +1,4 @@
-# ------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 # Remote state backend — Azure Blob Storage
 #
 # The state file is stored in the same storage account used by the
