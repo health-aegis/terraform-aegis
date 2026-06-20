@@ -1,0 +1,56 @@
+# ---------------------------------------------------------------------------
+# Terraform Infrastructure Pipeline — Caller workflow
+#
+# Triggers:
+#   • Push to main with any .tf file changes  → auto-deploys to TEST
+#   • workflow_dispatch                        → deploy to TEST or PROD manually
+#
+# Delegates all work to the reusable terraform-core.yml workflow which runs:
+#   validate → plan → approval gate → apply
+# ---------------------------------------------------------------------------
+
+name: Terraform Infrastructure Pipeline
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '**.tf'
+      - '**.tfvars'
+      - '**.hcl'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Target environment to deploy"
+        required: true
+        type: choice
+        options:
+          - test
+          - prod
+      tf_version:
+        description: "Terraform version (default: 1.7.5)"
+        required: false
+        type: string
+        default: "1.7.5"
+
+jobs:
+  # ── Auto-deploy to TEST on every push that touches .tf / .tfvars / .hcl ───
+  terraform-test:
+    name: "Test Environment"
+    if: github.event_name == 'push'
+    uses: ./.github/workflows/terraform-core.yml
+    with:
+      environment: test
+      tf_version: "1.7.5"
+    secrets: inherit
+
+  # ── Manual deploy via workflow_dispatch — routes to selected environment ───
+  terraform-manual:
+    name: "${{ inputs.environment }} Environment"
+    if: github.event_name == 'workflow_dispatch'
+    uses: ./.github/workflows/terraform-core.yml
+    with:
+      environment: ${{ inputs.environment }}
+      tf_version: ${{ inputs.tf_version || '1.7.5' }}
+    secrets: inherit
