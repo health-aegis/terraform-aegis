@@ -16,7 +16,7 @@
 # Bootstrap them with the terraform-state-locking module or create manually:
 #   az storage account create -n aegishealthstorage -g aswin-rg --sku Standard_LRS
 #   az storage container create -n tfstate --account-name aegishealthstorage
-# ---------------------------------------------------------------------------
+# -------------------------------------------------------------------------
 # ---------------------------------------------------------------------------
 # Partial backend config — the `key` (state file name) is supplied per-environment
 # via -backend-config so each environment has its own isolated state file.
