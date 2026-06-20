@@ -1,4 +1,19 @@
 # ---------------------------------------------------------------------------
+# CODE PACKAGING:
+#   archive_file creates a zip of infra/azure-function (node_modules excluded).
+#   null_resource deploys it via az CLI zip-deploy with --build-remote true so
+#   Azure runs npm install server-side (Oryx build). Re-deploys automatically
+#   when the function code hash changes.
+# ---------------------------------------------------------------------------
+
+data "archive_file" "function_package" {
+  type        = "zip"
+  source_dir  = "${path.module}/function-code"
+  output_path = "${path.root}/azure-function-deploy.zip"
+  excludes    = ["node_modules", "local.settings.json", ".funcignore"]
+}
+
+# ---------------------------------------------------------------------------
 # Function App module — blob-triggered OCR and email notification
 #
 # Trigger flow:
@@ -85,6 +100,10 @@ resource "azurerm_linux_function_app" "this" {
 
     # Application Insights telemetry
     "APPLICATIONINSIGHTS_CONNECTION_STRING" = "@Microsoft.KeyVault(VaultName=${var.key_vault_name};SecretName=kv-appinsights-conn)"
+
+    # Remote build — Azure runs npm install server-side during zip deploy
+    "SCM_DO_BUILD_DURING_DEPLOYMENT" = "true"
+    "ENABLE_ORYX_BUILD"              = "true"
   }
 
   # System-assigned identity — used for Key Vault reference resolution
@@ -93,6 +112,30 @@ resource "azurerm_linux_function_app" "this" {
   }
 
   tags = var.tags
+}
+
+# Deploy function code via zip deploy with remote build (npm install runs on Azure).
+# Triggers re-deploy whenever function source files change (tracked by SHA256 hash).
+resource "null_resource" "deploy_function_code" {
+  triggers = {
+    package_hash    = data.archive_file.function_package.output_sha256
+    function_app_id = azurerm_linux_function_app.this.id
+  }
+
+  provisioner "local-exec" {
+    command = <<-EOT
+      az functionapp deployment source config-zip \
+        --resource-group ${var.resource_group_name} \
+        --name ${azurerm_linux_function_app.this.name} \
+        --src ${data.archive_file.function_package.output_path} \
+        --build-remote true
+    EOT
+  }
+
+  depends_on = [
+    azurerm_linux_function_app.this,
+    azurerm_key_vault_access_policy.function_app,
+  ]
 }
 
 # Grant the function app's identity read access to Key Vault secrets.
