@@ -30,7 +30,7 @@ postgres_subnet_cidr = "10.1.11.0/24"
 bastion_subnet_cidr  = "10.1.20.0/26"
 
 # ── AKS — single node pools, small VMs ───────────────────────────────────────
-kubernetes_version              = "1.30"
+kubernetes_version              = "1.35"
 node_count                      = 1 # system pool: 1 node (auto-scales to 3)
 node_vm_size                    = "Standard_D2s_v3"
 user_node_count                 = 1 # user pool:   1 node (auto-scales to 3)
