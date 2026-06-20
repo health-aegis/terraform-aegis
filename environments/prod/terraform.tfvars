@@ -74,3 +74,7 @@ deployer_object_id = ""
 
 # curl ifconfig.me  (prod: restrict to your CI/CD agent IP, not 0.0.0.0)
 deployer_ip = "0.0.0.0"
+
+# ── Function App ──────────────────────────────────────────────────────────────
+# acs_sender_address is derived automatically from the ACS email domain — no manual step needed.
+app_base_url = "https://aegishealth.io"

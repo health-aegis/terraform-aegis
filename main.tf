@@ -294,6 +294,34 @@ module "key_vault" {
 }
 
 # ---------------------------------------------------------------------------
+# 14. Function App — blob-triggered OCR and email notification
+#
+# Triggers when a file lands in health-records/{userId}/{filename}, runs OCR
+# via Document Intelligence, saves extracted text to CosmosDB, and emails
+# the patient via Azure Communication Services.
+#
+# depends_on key_vault: the access policy (for KV reference resolution) must
+# be applied before the function app is started; explicit dep ensures ordering.
+# ---------------------------------------------------------------------------
+module "function_app" {
+  source = "./modules/function-app"
+
+  function_app_name         = "${local.prefix}-func"
+  resource_group_name       = module.resource_group.name
+  location                  = module.resource_group.location
+  func_storage_account_name = "${lower(replace(var.storage_account_name_prefix, "-", ""))}fn"
+  service_plan_name         = "${local.prefix}-func-plan"
+  key_vault_id              = module.key_vault.id
+  key_vault_name            = var.key_vault_name
+  tenant_id                 = data.azurerm_client_config.current.tenant_id
+  acs_sender_address        = "DoNotReply@${module.communication.mail_from_sender_domain}"
+  app_base_url              = var.app_base_url
+  tags                      = local.common_tags
+
+  depends_on = [module.key_vault]
+}
+
+# ---------------------------------------------------------------------------
 # Workload Identity RBAC — direct role assignment on a cloud service
 #
 # Grants the pod identity "Storage Blob Data Contributor" on the storage
