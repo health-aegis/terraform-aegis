@@ -82,11 +82,8 @@ jobs:
       TF_VAR_postgres_admin_password: ${{ secrets.TF_VAR_POSTGRES_ADMIN_PASSWORD }}
       TF_VAR_jwt_secret:              ${{ secrets.TF_VAR_JWT_SECRET }}
       TF_VAR_azure_ai_key:            ${{ secrets.TF_VAR_AZURE_AI_KEY }}
+      TF_VAR_azure_ai_endpoint:       ${{ secrets.TF_VAR_AZURE_AI_ENDPOINT }}
       TF_VAR_gemini_api_key:          ${{ secrets.TF_VAR_GEMINI_API_KEY }}
-
-    defaults:
-      run:
-        working-directory: terraform
 
     steps:
       - name: Checkout
