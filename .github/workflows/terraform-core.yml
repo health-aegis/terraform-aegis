@@ -1,26 +1,12 @@
 # ---------------------------------------------------------------------------
 # Terraform Core — Reusable workflow
 #
-# Lives at .github/workflows/ in the standalone Terraform repository.
-# All Terraform files are at the repo root (no terraform/ subdirectory).
+# Accepts an "action" input:
+#   plan  → validate + plan + post summary (safe, no infra changes)
+#   apply → validate + plan + apply        (triggered manually via workflow_dispatch)
 #
-# Flow:
-#   plan  →  approve (environment protection gate)  →  apply
-#
-# One-time GitHub repo setup:
-#   Settings → Environments → create:
-#     • terraform-apply-test   (add required reviewers)
-#     • terraform-apply-prod   (add required reviewers + branch filter = main)
-#
-#   Settings → Secrets → Actions → add:
-#     AZURE_CLIENT_ID, AZURE_TENANT_ID, AZURE_SUBSCRIPTION_ID
-#     TF_VAR_POSTGRES_ADMIN_PASSWORD, TF_VAR_JWT_SECRET
-#     TF_VAR_AZURE_AI_KEY, TF_VAR_GEMINI_API_KEY
-#
-#   App Registration → Federated credentials → add subjects:
-#     repo:<org>/<repo>:ref:refs/heads/main
-#     repo:<org>/<repo>:environment:terraform-apply-test
-#     repo:<org>/<repo>:environment:terraform-apply-prod
+# This replaces the GitHub Environment approval gate (paid feature).
+# The caller controls when apply runs — workflow_dispatch IS the approval.
 # ---------------------------------------------------------------------------
 
 name: "Terraform Core (Reusable)"
@@ -32,6 +18,10 @@ on:
         description: "Target environment — must match environments/<name>/ directory"
         required: true
         type: string
+      action:
+        description: "plan (validate only) or apply (plan + apply)"
+        required: true
+        type: string
       tf_version:
         description: "Terraform CLI version"
         required: false
@@ -39,7 +29,7 @@ on:
         default: "1.7.5"
 
 # ────────────────────────────────────────────────────────────────────────────
-# Job 1 — Validate + Plan
+# Job 1 — Validate + Plan  (runs on every call)
 # ────────────────────────────────────────────────────────────────────────────
 jobs:
   plan:
@@ -47,8 +37,8 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      id-token: write       # OIDC token for Azure login + Terraform backend auth
-      pull-requests: write  # post plan to PR summary
+      id-token: write
+      pull-requests: write
 
     env:
       ARM_USE_OIDC:        "true"
@@ -58,6 +48,7 @@ jobs:
       TF_VAR_postgres_admin_password: ${{ secrets.TF_VAR_POSTGRES_ADMIN_PASSWORD }}
       TF_VAR_jwt_secret:              ${{ secrets.TF_VAR_JWT_SECRET }}
       TF_VAR_azure_ai_key:            ${{ secrets.TF_VAR_AZURE_AI_KEY }}
+      TF_VAR_azure_ai_endpoint:       ${{ secrets.TF_VAR_AZURE_AI_ENDPOINT }}
       TF_VAR_gemini_api_key:          ${{ secrets.TF_VAR_GEMINI_API_KEY }}
 
     steps:
@@ -91,7 +82,6 @@ jobs:
         run: terraform validate
 
       - name: Terraform Plan
-        id: plan
         run: |
           terraform plan \
             -var-file=environments/${{ inputs.environment }}/terraform.tfvars \
@@ -99,7 +89,6 @@ jobs:
             -no-color \
             -input=false \
             2>&1 | tee plan.txt
-          echo "plan_exit_code=${PIPESTATUS[0]}" >> "$GITHUB_OUTPUT"
 
       - name: Post plan to job summary
         if: always()
@@ -109,13 +98,14 @@ jobs:
             echo ""
             echo "| | |"
             echo "|---|---|"
+            echo "| **Action** | \`${{ inputs.action }}\` |"
             echo "| **Environment** | \`${{ inputs.environment }}\` |"
             echo "| **Triggered by** | \`${{ github.actor }}\` |"
             echo "| **Commit** | \`${{ github.sha }}\` |"
             echo ""
             echo "<details><summary>Show full plan output</summary>"
             echo ""
-            echo '```hcl'
+            echo '```'
             cat plan.txt
             echo '```'
             echo ""
@@ -130,30 +120,15 @@ jobs:
           retention-days: 1
 
 # ────────────────────────────────────────────────────────────────────────────
-# Job 2 — Manual Approval Gate
+# Job 2 — Apply  (only when action == 'apply')
 #
-# GitHub pauses here until a reviewer approves in the GitHub UI.
-# The environment protection rule does all the work — no code needed.
-# ────────────────────────────────────────────────────────────────────────────
-  approve:
-    name: "Waiting for Approval (${{ inputs.environment }})"
-    needs: plan
-    runs-on: ubuntu-latest
-    environment: terraform-apply-${{ inputs.environment }}
-
-    steps:
-      - name: Approval received
-        run: |
-          echo "Approved by: ${{ github.actor }}"
-          echo "Environment: ${{ inputs.environment }}"
-          echo "Proceeding with terraform apply."
-
-# ────────────────────────────────────────────────────────────────────────────
-# Job 3 — Apply
+# Triggered manually via workflow_dispatch in terraform-apply.yml.
+# You choosing to run the dispatch IS the approval decision.
 # ────────────────────────────────────────────────────────────────────────────
   apply:
     name: "Apply (${{ inputs.environment }})"
-    needs: approve
+    needs: plan
+    if: inputs.action == 'apply'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -167,6 +142,7 @@ jobs:
       TF_VAR_postgres_admin_password: ${{ secrets.TF_VAR_POSTGRES_ADMIN_PASSWORD }}
       TF_VAR_jwt_secret:              ${{ secrets.TF_VAR_JWT_SECRET }}
       TF_VAR_azure_ai_key:            ${{ secrets.TF_VAR_AZURE_AI_KEY }}
+      TF_VAR_azure_ai_endpoint:       ${{ secrets.TF_VAR_AZURE_AI_ENDPOINT }}
       TF_VAR_gemini_api_key:          ${{ secrets.TF_VAR_GEMINI_API_KEY }}
 
     steps:
@@ -209,7 +185,7 @@ jobs:
             echo ""
             echo "| | |"
             echo "|---|---|"
-            echo "| **Status** | ${{ job.status }} |"
+            echo "| **Status** | \`${{ job.status }}\` |"
             echo "| **Environment** | \`${{ inputs.environment }}\` |"
             echo "| **Applied by** | \`${{ github.actor }}\` |"
             echo "| **Run ID** | \`${{ github.run_id }}\` |"
