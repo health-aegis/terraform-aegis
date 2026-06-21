@@ -5,8 +5,9 @@
 #
 #   resource_group
 #       └── networking
-#               ├── aks          (depends on networking, monitoring)
-#               │     └── acr   (depends on aks for kubelet_identity_object_id)
+#               ├── app_gateway  (public-subnet — AGIC single entry point)
+#               │     └── aks   (depends on app_gateway for AGIC addon)
+#               │           └── acr (depends on aks for kubelet_identity_object_id)
 #               ├── bastion      (depends on networking)
 #               ├── postgres     (depends on networking)
 #               ├── cosmosdb
@@ -111,7 +112,19 @@ module "monitoring" {
 }
 
 # ---------------------------------------------------------------------------
-# 4. AKS — Private Kubernetes cluster
+# 4. Application Gateway — public entry point + AGIC ingress controller
+# ---------------------------------------------------------------------------
+module "app_gateway" {
+  source              = "./modules/app-gateway"
+  name                = "${local.prefix}-appgw"
+  resource_group_name = module.resource_group.name
+  location            = module.resource_group.location
+  subnet_id           = module.networking.subnet_ids["public-subnet"]
+  tags                = local.common_tags
+}
+
+# ---------------------------------------------------------------------------
+# 5. AKS — Private Kubernetes cluster (renumbered; was 4)
 # ---------------------------------------------------------------------------
 module "aks" {
   source                     = "./modules/aks"
@@ -126,7 +139,10 @@ module "aks" {
   log_analytics_workspace_id = module.monitoring.workspace_id
   user_node_count            = var.user_node_count
   user_node_vm_size          = var.user_node_vm_size
+  app_gateway_id             = module.app_gateway.id
   tags                       = local.common_tags
+
+  depends_on = [module.app_gateway]
 }
 
 # ---------------------------------------------------------------------------

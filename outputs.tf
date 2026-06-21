@@ -2,6 +2,16 @@
 # Root outputs — key values needed for post-deployment configuration
 # ---------------------------------------------------------------------------
 
+output "app_gateway_public_ip" {
+  description = "Public IP address of the Application Gateway — point your DNS here"
+  value       = module.app_gateway.public_ip_address
+}
+
+output "app_gateway_id" {
+  description = "Resource ID of the Application Gateway"
+  value       = module.app_gateway.id
+}
+
 output "resource_group_name" {
   description = "Name of the main Aegis resource group"
   value       = module.resource_group.name

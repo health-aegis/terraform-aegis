@@ -114,6 +114,7 @@ resource "azurerm_linux_function_app" "this" {
   tags = var.tags
 }
 
+
 # Deploy function code via zip deploy with remote build (npm install runs on Azure).
 # Triggers re-deploy whenever function source files change (tracked by SHA256 hash).
 resource "null_resource" "deploy_function_code" {
@@ -123,7 +124,8 @@ resource "null_resource" "deploy_function_code" {
   }
 
   provisioner "local-exec" {
-    command = <<-EOT
+    on_failure = continue
+    command    = <<-EOT
       az functionapp deployment source config-zip \
         --resource-group ${var.resource_group_name} \
         --name ${azurerm_linux_function_app.this.name} \
