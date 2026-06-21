@@ -16,12 +16,12 @@
 # ---------------------------------------------------------------------------
 
 resource "azurerm_storage_account" "this" {
-  name                          = var.account_name
-  resource_group_name           = var.resource_group_name
-  location                      = var.location
-  account_tier                  = "Standard"
-  account_replication_type      = "LRS"
-  min_tls_version               = "TLS1_2"
+  name                     = var.account_name
+  resource_group_name      = var.resource_group_name
+  location                 = var.location
+  account_tier             = "Standard"
+  account_replication_type = "LRS"
+  min_tls_version          = "TLS1_2"
   # Public access left enabled so the Terraform runner (GitHub Actions) can manage
   # containers. Container-level access is private (container_access_type = "private").
   # The private endpoint handles in-cluster pod access.

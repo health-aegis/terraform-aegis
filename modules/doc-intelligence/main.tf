@@ -27,7 +27,7 @@ resource "azurerm_cognitive_account" "this" {
   sku_name                      = "S0"
   public_network_access_enabled = false
   # Required for private endpoint — must be unique across all Azure Cognitive Services
-  custom_subdomain_name         = var.name
+  custom_subdomain_name = var.name
 
   tags = var.tags
 }
