@@ -34,7 +34,7 @@ resource "azurerm_servicebus_queue" "notifications" {
   # Keep unprocessed messages for 7 days before moving to dead-letter queue
   max_delivery_count                   = 5
   lock_duration                        = "PT1M"
-  default_message_time_to_live         = "P7D"
+  default_message_ttl                  = "P7D"
   dead_lettering_on_message_expiration = true
   enable_partitioning                  = false
 }
