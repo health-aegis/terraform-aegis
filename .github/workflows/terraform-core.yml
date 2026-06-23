@@ -174,13 +174,30 @@ jobs:
 
       - name: Import orphaned resources
         run: |
-          # Service Bus namespace was created by a cancelled apply — not in state yet.
-          # terraform import is idempotent: safely ignored if already in state.
-          terraform import \
-            -var-file=environments/${{ inputs.environment }}/terraform.tfvars \
-            -input=false \
+          # Resources created by a cancelled apply — exist in Azure but not in state.
+          # Each import uses || true so it is a no-op if already in state.
+          SUB="${ARM_SUBSCRIPTION_ID}"
+          RG="rg-aegis-test"
+
+          terraform import -var-file=environments/${{ inputs.environment }}/terraform.tfvars -input=false \
             module.service_bus.azurerm_servicebus_namespace.this \
-            "/subscriptions/${ARM_SUBSCRIPTION_ID}/resourceGroups/rg-aegis-test/providers/Microsoft.ServiceBus/namespaces/aegis-test-bus" || true
+            "/subscriptions/${SUB}/resourceGroups/${RG}/providers/Microsoft.ServiceBus/namespaces/aegis-test-bus" || true
+
+          terraform import -var-file=environments/${{ inputs.environment }}/terraform.tfvars -input=false \
+            module.service_bus.azurerm_servicebus_queue.notifications \
+            "/subscriptions/${SUB}/resourceGroups/${RG}/providers/Microsoft.ServiceBus/namespaces/aegis-test-bus/queues/notifications" || true
+
+          terraform import -var-file=environments/${{ inputs.environment }}/terraform.tfvars -input=false \
+            module.service_bus.azurerm_servicebus_namespace_authorization_rule.notification_worker \
+            "/subscriptions/${SUB}/resourceGroups/${RG}/providers/Microsoft.ServiceBus/namespaces/aegis-test-bus/authorizationRules/notification-worker" || true
+
+          terraform import -var-file=environments/${{ inputs.environment }}/terraform.tfvars -input=false \
+            module.aks.azurerm_role_assignment.agic_rg_reader \
+            "/subscriptions/${SUB}/resourceGroups/${RG}/providers/Microsoft.Authorization/roleAssignments/c98adc9548924bb98401b88c9d64c0f2" || true
+
+          terraform import -var-file=environments/${{ inputs.environment }}/terraform.tfvars -input=false \
+            module.aks.azurerm_role_assignment.agic_appgw_contributor \
+            "/subscriptions/${SUB}/resourceGroups/${RG}/providers/Microsoft.Network/applicationGateways/aegis-test-appgw/providers/Microsoft.Authorization/roleAssignments/2ef1afea87174cfb8b735b70e8b1c0e5" || true
 
       - name: Terraform Plan (pre-apply)
         run: |
