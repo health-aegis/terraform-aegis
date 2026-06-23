@@ -120,22 +120,16 @@ jobs:
           retention-days: 1
 
 # ────────────────────────────────────────────────────────────────────────────
-# Job 2 — Apply  (manual gate + apply in one job)
+# Job 2 — Apply  (only when action == 'apply')
 #
-# The environment: key on THIS job is what creates the approval gate.
-# GitHub pauses the job, sends a review request to configured reviewers,
-# and only starts the job after someone clicks "Approve and deploy".
-#
-# Create these two GitHub Environments with required reviewers:
-#   Settings → Environments → terraform-approval-test  → add reviewer
-#   Settings → Environments → terraform-approval-prod  → add reviewer
+# Triggered manually via workflow_dispatch in terraform-apply.yml.
+# Choosing action=apply in the dispatch input IS the approval decision.
 # ────────────────────────────────────────────────────────────────────────────
   apply:
     name: "Apply (${{ inputs.environment }})"
     needs: plan
     if: inputs.action == 'apply'
     runs-on: ubuntu-latest
-    environment: terraform-approval-${{ inputs.environment }}
     permissions:
       contents: read
       id-token: write
