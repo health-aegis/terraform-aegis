@@ -25,6 +25,10 @@ resource "azurerm_servicebus_namespace" "this" {
   resource_group_name = var.resource_group_name
   sku                 = "Standard"
   tags                = var.tags
+
+  lifecycle {
+    prevent_destroy = true
+  }
 }
 
 resource "azurerm_servicebus_queue" "notifications" {

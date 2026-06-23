@@ -110,6 +110,10 @@ resource "azurerm_kubernetes_cluster" "this" {
   }
 
   tags = var.tags
+
+  lifecycle {
+    prevent_destroy = true
+  }
 }
 
 # ---------------------------------------------------------------------------
@@ -156,4 +160,8 @@ resource "azurerm_kubernetes_cluster_node_pool" "user" {
   }
 
   tags = var.tags
+
+  lifecycle {
+    prevent_destroy = true
+  }
 }

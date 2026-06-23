@@ -39,6 +39,10 @@ resource "azurerm_cosmosdb_account" "this" {
   is_virtual_network_filter_enabled = false
 
   tags = var.tags
+
+  lifecycle {
+    prevent_destroy = true
+  }
 }
 
 resource "azurerm_cosmosdb_mongo_database" "this" {
@@ -50,6 +54,10 @@ resource "azurerm_cosmosdb_mongo_database" "this" {
   # More cost-efficient than provisioned throughput for variable workloads.
   autoscale_settings {
     max_throughput = 1000
+  }
+
+  lifecycle {
+    prevent_destroy = true
   }
 }
 

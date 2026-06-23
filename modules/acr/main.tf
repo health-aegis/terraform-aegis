@@ -24,6 +24,10 @@ resource "azurerm_container_registry" "this" {
   public_network_access_enabled = true
 
   tags = var.tags
+
+  lifecycle {
+    prevent_destroy = true
+  }
 }
 
 # ---------------------------------------------------------------------------
