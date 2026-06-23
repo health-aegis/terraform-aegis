@@ -172,6 +172,16 @@ jobs:
             -reconfigure \
             -input=false
 
+      - name: Import orphaned resources
+        run: |
+          # Service Bus namespace was created by a cancelled apply — not in state yet.
+          # terraform import is idempotent: safely ignored if already in state.
+          terraform import \
+            -var-file=environments/${{ inputs.environment }}/terraform.tfvars \
+            -input=false \
+            module.service_bus.azurerm_servicebus_namespace.this \
+            "/subscriptions/${ARM_SUBSCRIPTION_ID}/resourceGroups/rg-aegis-test/providers/Microsoft.ServiceBus/namespaces/aegis-test-bus" || true
+
       - name: Terraform Plan (pre-apply)
         run: |
           terraform plan \
