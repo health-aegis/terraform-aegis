@@ -36,7 +36,7 @@ resource "azurerm_servicebus_queue" "notifications" {
   lock_duration                        = "PT1M"
   default_message_ttl                  = "P7D"
   dead_lettering_on_message_expiration = true
-  enable_partitioning                  = false
+  partitioning_enabled                 = false
 }
 
 resource "azurerm_servicebus_namespace_authorization_rule" "notification_worker" {
