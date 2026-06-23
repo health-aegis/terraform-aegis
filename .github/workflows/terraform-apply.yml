@@ -1,18 +1,18 @@
 # ---------------------------------------------------------------------------
 # Terraform Infrastructure Pipeline — Caller workflow
 #
-# Two triggers, two actions:
+# Two triggers:
 #
 #   PUSH to main (terraform files change)
-#     → runs "plan" only — safe, no infra changes, posts plan to summary
-#     → review the plan output in the Actions summary tab
+#     → validate → plan → [MANUAL APPROVAL GATE] → apply → sync GitOps
+#     → reviewer clicks "Approve and deploy" in GitHub Actions UI
 #
 #   WORKFLOW DISPATCH (manual trigger)
 #     → you choose environment + action (plan or apply)
-#     → running "apply" via dispatch IS the approval decision
+#     → useful for re-runs, targeted environments, or plan-only previews
 #
 # Flow:
-#   push  →  plan only  →  review summary  →  manually dispatch apply when ready
+#   push  →  plan  →  approve (GitHub Environment gate)  →  apply
 # ---------------------------------------------------------------------------
 
 name: Terraform Infrastructure Pipeline
@@ -54,14 +54,14 @@ on:
         default: "1.7.5"
 
 jobs:
-  # ── Push to main → plan only (safe, no infra changes) ─────────────────────
+  # ── Push to main → plan → approval gate → apply ───────────────────────────
   terraform-plan-test:
-    name: "Plan — Test Environment"
+    name: "Plan + Approve + Apply — Test Environment"
     if: github.event_name == 'push'
     uses: ./.github/workflows/terraform-core.yml
     with:
       environment: test
-      action: plan
+      action: apply
       tf_version: "1.7.5"
     secrets: inherit
 

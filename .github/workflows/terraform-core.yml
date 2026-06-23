@@ -120,14 +120,34 @@ jobs:
           retention-days: 1
 
 # ────────────────────────────────────────────────────────────────────────────
-# Job 2 — Apply  (only when action == 'apply')
+# Job 2 — Approve  (manual gate before apply)
 #
-# Triggered manually via workflow_dispatch in terraform-apply.yml.
-# You choosing to run the dispatch IS the approval decision.
+# References the "terraform-approval" GitHub Environment which must be
+# configured with required reviewers in:
+#   GitHub repo → Settings → Environments → terraform-approval → Required reviewers
+#
+# GitHub pauses here and sends a review request. The run resumes only
+# after an authorised reviewer clicks "Approve and deploy" in the UI.
+# ────────────────────────────────────────────────────────────────────────────
+  approve:
+    name: "Await Approval (${{ inputs.environment }})"
+    needs: plan
+    if: inputs.action == 'apply'
+    runs-on: ubuntu-latest
+    environment: terraform-approval
+    steps:
+      - name: Approval granted
+        run: |
+          echo "Approved by: ${{ github.actor }}"
+          echo "Environment: ${{ inputs.environment }}"
+          echo "Proceeding to terraform apply..."
+
+# ────────────────────────────────────────────────────────────────────────────
+# Job 3 — Apply  (only when action == 'apply', runs after manual approval)
 # ────────────────────────────────────────────────────────────────────────────
   apply:
     name: "Apply (${{ inputs.environment }})"
-    needs: plan
+    needs: approve
     if: inputs.action == 'apply'
     runs-on: ubuntu-latest
     permissions:
@@ -203,7 +223,7 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
 
 # ────────────────────────────────────────────────────────────────────────────
-# Job 3 — Sync GitOps  (only after a successful apply)
+# Job 4 — Sync GitOps  (only after a successful apply)
 #
 # Patches helm/environments/<env>/values.yaml in k8s-manifests with the
 # real Terraform outputs so ArgoCD always deploys with the correct client ID,
