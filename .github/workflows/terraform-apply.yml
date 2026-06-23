@@ -12,7 +12,11 @@
 #     → useful for re-runs, targeted environments, or plan-only previews
 #
 # Flow:
-#   push  →  plan  →  approve (GitHub Environment gate)  →  apply
+#   push  →  plan  →  [approval gate on apply job]  →  apply  →  sync GitOps
+#
+# Required GitHub Environments (Settings → Environments → Add required reviewers):
+#   terraform-approval-test
+#   terraform-approval-prod
 # ---------------------------------------------------------------------------
 
 name: Terraform Infrastructure Pipeline

@@ -120,36 +120,22 @@ jobs:
           retention-days: 1
 
 # ────────────────────────────────────────────────────────────────────────────
-# Job 2 — Approve  (manual gate before apply)
+# Job 2 — Apply  (manual gate + apply in one job)
 #
-# References the "terraform-approval" GitHub Environment which must be
-# configured with required reviewers in:
-#   GitHub repo → Settings → Environments → terraform-approval → Required reviewers
+# The environment: key on THIS job is what creates the approval gate.
+# GitHub pauses the job, sends a review request to configured reviewers,
+# and only starts the job after someone clicks "Approve and deploy".
 #
-# GitHub pauses here and sends a review request. The run resumes only
-# after an authorised reviewer clicks "Approve and deploy" in the UI.
-# ────────────────────────────────────────────────────────────────────────────
-  approve:
-    name: "Await Approval (${{ inputs.environment }})"
-    needs: plan
-    if: inputs.action == 'apply'
-    runs-on: ubuntu-latest
-    environment: terraform-approval
-    steps:
-      - name: Approval granted
-        run: |
-          echo "Approved by: ${{ github.actor }}"
-          echo "Environment: ${{ inputs.environment }}"
-          echo "Proceeding to terraform apply..."
-
-# ────────────────────────────────────────────────────────────────────────────
-# Job 3 — Apply  (only when action == 'apply', runs after manual approval)
+# Create these two GitHub Environments with required reviewers:
+#   Settings → Environments → terraform-approval-test  → add reviewer
+#   Settings → Environments → terraform-approval-prod  → add reviewer
 # ────────────────────────────────────────────────────────────────────────────
   apply:
     name: "Apply (${{ inputs.environment }})"
-    needs: approve
+    needs: plan
     if: inputs.action == 'apply'
     runs-on: ubuntu-latest
+    environment: terraform-approval-${{ inputs.environment }}
     permissions:
       contents: read
       id-token: write
@@ -192,11 +178,12 @@ jobs:
             -reconfigure \
             -input=false
 
-      - name: Download plan artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: tfplan-${{ inputs.environment }}-${{ github.run_id }}
-          path: .
+      - name: Terraform Plan (pre-apply)
+        run: |
+          terraform plan \
+            -var-file=environments/${{ inputs.environment }}/terraform.tfvars \
+            -out=tfplan.binary \
+            -input=false
 
       - name: Terraform Apply
         run: terraform apply -auto-approve -input=false tfplan.binary
