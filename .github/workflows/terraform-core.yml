@@ -199,6 +199,10 @@ jobs:
             module.aks.azurerm_role_assignment.agic_appgw_contributor \
             "/subscriptions/${SUB}/resourceGroups/${RG}/providers/Microsoft.Network/applicationGateways/aegis-test-appgw/providers/Microsoft.Authorization/roleAssignments/2ef1afea87174cfb8b735b70e8b1c0e5" || true
 
+          terraform import -var-file=environments/${{ inputs.environment }}/terraform.tfvars -input=false \
+            module.key_vault.azurerm_key_vault_access_policy.deployer \
+            "/subscriptions/${SUB}/resourceGroups/${RG}/providers/Microsoft.KeyVault/vaults/aegis-kv-test/objectId/ac4d1323-c029-44ef-a020-15b912d31423" || true
+
       - name: Terraform Plan (pre-apply)
         run: |
           terraform plan \
