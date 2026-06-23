@@ -205,7 +205,7 @@ jobs:
 
           terraform import -var-file=environments/${{ inputs.environment }}/terraform.tfvars -input=false \
             'module.key_vault.azurerm_key_vault_secret.secrets["kv-servicebus-conn"]' \
-            "https://aegis-kv-test.vault.azure.net/secrets/kv-servicebus-conn" || true
+            "https://aegis-kv-test.vault.azure.net/secrets/kv-servicebus-conn/b89c7fff3cfb426cb1e54baf7d2e4734" || true
 
       - name: Terraform Plan (pre-apply)
         run: |
