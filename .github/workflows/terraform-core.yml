@@ -203,6 +203,10 @@ jobs:
             module.key_vault.azurerm_key_vault_access_policy.deployer \
             "/subscriptions/${SUB}/resourceGroups/${RG}/providers/Microsoft.KeyVault/vaults/aegis-kv-test/objectId/ac4d1323-c029-44ef-a020-15b912d31423" || true
 
+          terraform import -var-file=environments/${{ inputs.environment }}/terraform.tfvars -input=false \
+            'module.key_vault.azurerm_key_vault_secret.secrets["kv-servicebus-conn"]' \
+            "https://aegis-kv-test.vault.azure.net/secrets/kv-servicebus-conn" || true
+
       - name: Terraform Plan (pre-apply)
         run: |
           terraform plan \
