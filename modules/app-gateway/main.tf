@@ -60,8 +60,6 @@ resource "azurerm_application_gateway" "this" {
   name                = var.name
   resource_group_name = var.resource_group_name
   location            = var.location
-  firewall_policy_id  = var.enable_waf ? azurerm_web_application_firewall_policy.this[0].id : null
-
   # WAF policy attached via firewall_policy_id (replaces retired waf_configuration block).
   firewall_policy_id = var.enable_waf ? azurerm_web_application_firewall_policy.this[0].id : null
 
