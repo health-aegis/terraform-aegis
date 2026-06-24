@@ -253,6 +253,7 @@ jobs:
     needs: apply
     if: inputs.action == 'apply'
     runs-on: ubuntu-latest
+    continue-on-error: true
     permissions:
       contents: read
 

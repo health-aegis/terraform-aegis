@@ -1,24 +1,3 @@
-# ---------------------------------------------------------------------------
-# Azure Service Bus module — async messaging for notification pipeline
-#
-# Architecture:
-#   Service Bus Namespace (Standard)
-#     └── Queue: "notifications"
-#           ├── Authorization rule: "notification-worker" (Listen + Send)
-#           └── Messages published by: api-gateway (missed-dose alerts)
-#               Messages consumed by:  notification-worker (email dispatch)
-#
-# WHY Standard tier:
-#   Basic only supports queues with limited features and no dead-lettering.
-#   Standard adds dead-letter queues, message sessions, and duplicate detection
-#   which are important for reliable notification delivery in healthcare.
-#
-# WHY a dedicated queue for notifications:
-#   Decouples the api-gateway from the email-sending path. If the email
-#   provider is slow or down, messages queue up and are retried without
-#   blocking the API response to the user.
-# ---------------------------------------------------------------------------
-
 resource "azurerm_servicebus_namespace" "this" {
   name                = var.namespace_name
   location            = var.location
